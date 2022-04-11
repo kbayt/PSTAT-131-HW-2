@@ -100,5 +100,4 @@ abalone_metrics <- metric_set(rmse, rsq, mae)
 abalone_metrics(abalone_train_res, truth = age, estimate = .pred)
 ```
 
-
-```{r}
+\`\`\`{r}
