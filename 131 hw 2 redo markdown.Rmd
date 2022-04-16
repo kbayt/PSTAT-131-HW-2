@@ -1,3 +1,12 @@
+---
+title: "131 HOMEWORK 2"
+author: "Katherine Bayt"
+date: '2022-04-15'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
 library(ggplot2)
 library(tidyverse)
 library(tidymodels)
@@ -6,50 +15,63 @@ library(ggthemes)
 tidymodels_prefer()
 library(ISLR)
 library(yardstick)
-
 abalone <- read.csv("C:\\abalone.csv")
-view(abalone)
-abalone$rings
+```
 
-# Q1: Create abalone dataset with age
+## QUESTION 1
+
+```{r echo = FALSE}
 abalone <- abalone %>%
   mutate(age = abalone$rings + 1.50)
-view(abalone)
-## view distribution of age
 abalone %>% ggplot(aes(x=age))+ geom_histogram(bins=60)
 
-# Q2: split into training and testing set 
+```
+
+The distribution of age is numeric with a range from 2 to 32. Age has the highest counts at 12, with higher counts to the left of 12, and lower counts to the right os 12. The distribution is right skewed, with a larger range of ages to the right of the highest count age.
+
+## QUESTION 2
+
+```{r}
 set.seed(4857)
 abalone$rings = NULL
 abalone_split <- initial_split(abalone, prop = 0.8,
-                               strata = age)
+                                strata = age)
 abalone_train <- training(abalone_split)
 abalone_test <- testing(abalone_split)
+```
 
-# Q3: recipe predicting age (without rings)
+## QUESTION 3
+
+```{r}
 abalone_recipe <- recipe(age ~ ., 
                          data = abalone_train) %>%
   step_dummy(all_nominal_predictors()) %>%
   step_interact(terms=~starts_with("type"):shucked_weight) %>%
   step_interact(terms=~longest_shell:diameter) %>%
   step_interact(terms=~shucked_weight:shell_weight) %>%
-  step_normalize(all_predictors()) %>%
-  prep(abalone_train) 
-abalone_recipe
-abalone_train
-prep(abalone_recipe)
+  step_normalize(all_predictors())
 summary(abalone_recipe)
+view(abalone_train)
+```
 
-# Q4: Create and Store a linear object using "lm" engine
+We should not use rings to predict age because they have a positive correlation of 1. Thus, when predicing age, the model will predict age as the value of rings. \## QUESTION 4
+
+```{r}
 lm_model <- linear_reg() %>%
   set_engine("lm")
+```
 
-# Q5: Set up wkflow with model and recipe
+## QUESTION 5
+
+```{r}
 lm_wflow <- workflow() %>%
   add_model(lm_model) %>%
   add_recipe(abalone_recipe)
+```
 
-# Q6: Use fit() to predict age with given data
+## QUESTION 6
+
+```{r}
 lm_fit <- fit(lm_wflow, abalone_train)
 lm_fit
 df <- data.frame(longest_shell = 0.5, diameter = 0.10,
@@ -57,8 +79,11 @@ df <- data.frame(longest_shell = 0.5, diameter = 0.10,
                  shucked_weight = 1, viscera_weight = 2,
                  shell_weight = 1, type = "F")
 predict(lm_fit, new_data = df)
+```
 
-# Q7: 
+## QUESTION 7
+
+```{r}
 abalone_train_res <- predict(lm_fit, new_data = abalone_train %>%
                                select(-age))
 abalone_train_res <- bind_cols(abalone_train_res,
@@ -68,3 +93,6 @@ abalone_train_res %>% head()
 abalone_metrics <- metric_set(rmse, rsq, mae)
 abalone_metrics(abalone_train_res, truth = age, estimate = .pred)
 
+```
+
+Overall, we get a r-squared value of 0.55, showing that about 55% of our training data fits the regression model. Thus, the regression model does not do a very good job of predicting age within the training set.
